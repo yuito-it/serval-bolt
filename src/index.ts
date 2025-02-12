@@ -338,13 +338,14 @@ app.event('member_joined_channel', async ({ event, client }) => {
     let message = value;
 
     if (value.includes('%JOINNUMBER%')) {
-      // チャンネルのメンバー一覧を取得
-      const result = await client.conversations.members({
+      // チャンネルの情報を取得
+      const info = await client.conversations.info({
         channel: event.channel,
+        include_num_members: true,
       });
 
-      // 新たに参加したユーザーも含めたメンバー数を取得
-      const joinNumber = result.members?.length ?? 0;
+      // num_members から参加者数を取得
+      const joinNumber = info.channel?.num_members || 0;
 
       message = message.replace(/%JOINNUMBER%/g, joinNumber.toString());
     }
