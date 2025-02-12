@@ -147,7 +147,7 @@ app.event('reaction_added', async ({ event, client }) => {
   }
 
   console.log(
-    `[${nowStr()}][INFO] Add Goodreaction goodcount: ${goodcount} itemUserId: ${itemUserId} reactionUserId: ${reactionUserId} eventTs: ${eventTs}`
+    `[${nowStr()}][INFO] Add Goodreaction goodcount: ${goodcount} itemUserId: ${itemUserId} reactionUserId: ${reactionUserId} eventTs: ${eventTs}`,
   );
 });
 
@@ -190,7 +190,7 @@ app.event('reaction_removed', async ({ event, client }) => {
   }
 
   console.log(
-    `[${nowStr()}][INFO] Remove Goodreaction goodcount: ${goodcount} itemUserId: ${itemUserId} reactionUserId: ${reactionUserId} eventTs: ${eventTs}`
+    `[${nowStr()}][INFO] Remove Goodreaction goodcount: ${goodcount} itemUserId: ${itemUserId} reactionUserId: ${reactionUserId} eventTs: ${eventTs}`,
   );
 });
 
@@ -205,7 +205,7 @@ function saveJoinMessages() {
   fs.writeFileSync(
     joinMessagesFileName,
     JSON.stringify(Array.from(joinMessages)),
-    'utf8'
+    'utf8',
   );
 }
 
@@ -213,7 +213,7 @@ function saveLeftMessages() {
   fs.writeFileSync(
     leftMessagesFileName,
     JSON.stringify(Array.from(leftMessages)),
-    'utf8'
+    'utf8',
   );
 }
 
@@ -249,11 +249,11 @@ app.message(
       await say(
         `入室メッセージを登録したよ。\n登録された入室メッセージ:\n\n${joinMessage.replace(
           '\\n',
-          '\n'
-        )}`
+          '\n',
+        )}`,
       );
     }
-  }
+  },
 );
 
 // 発言したチャンネルの入室メッセージの設定を解除する
@@ -293,11 +293,11 @@ app.message(
       await say(
         `退出メッセージを登録したよ。\n登録された退出メッセージ:\n\n${leftMessage.replace(
           '\\n',
-          '\n'
-        )}`
+          '\n',
+        )}`,
       );
     }
-  }
+  },
 );
 
 // 発言したチャンネルの入室メッセージの設定を解除する
@@ -324,11 +324,32 @@ app.message(/^(退出|退室)メッセージを見せて/i, async ({ message, sa
   }
 });
 
-// 部屋に入ったユーザーへの入室メッセージを案内 %USERNAME% はユーザー名に、%ROOMNAME% は部屋名に、\\n は改行コード(\n)に置換
+/*
+ * 部屋に入ったユーザーへの入室メッセージを案内
+ * 以下の変数が使用可能:
+ * - %USERNAME% : ユーザー名
+ * - %ROOMNAME% : 部屋名
+ * - %JOINNUMBER% : 参加者数
+ * - \\n : 改行コード(\n)
+ */
 app.event('member_joined_channel', async ({ event, client }) => {
   const value = joinMessages.get(event.channel);
   if (value) {
-    const message = value
+    let message = value;
+
+    if (value.includes('%JOINNUMBER%')) {
+      // チャンネルのメンバー一覧を取得
+      const result = await client.conversations.members({
+        channel: event.channel,
+      });
+
+      // 新たに参加したユーザーも含めたメンバー数を取得
+      const joinNumber = result.members?.length ?? 0;
+
+      message = message.replace(/%JOINNUMBER%/g, joinNumber.toString());
+    }
+
+    message = message
       .replace(/%USERNAME%/g, `<@${event.user}>`)
       .replace(/%ROOMNAME%/g, `<#${event.channel}>`)
       .replace(/\\n/g, '\n');
@@ -336,7 +357,13 @@ app.event('member_joined_channel', async ({ event, client }) => {
   }
 });
 
-// 部屋から退出したユーザーの退出メッセージを案内 %USERNAME% はユーザー名に、%ROOMNAME% は部屋名に、\\n は改行コード(\n)に置換
+/*
+ * 部屋から退出したユーザーへの退出メッセージを案内
+ * 以下の変数が使用可能:
+ * - %USERNAME% : ユーザー名
+ * - %ROOMNAME% : 部屋名
+ * - \\n : 改行コード(\n)
+ */
 app.event('member_left_channel', async ({ event, client }) => {
   const value = leftMessages.get(event.channel);
   if (value) {
